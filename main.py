@@ -1,12 +1,12 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI()
 
 # What a team must look like when someone creates one
 class TeamCreate(BaseModel):
-    name: str
-    country: str
+    name: str = Field(min_length=1, max_length=50)
+    country: str = Field(min_length=1, max_length=50)   
 
 # Our "database" for now
 teams = []
@@ -27,6 +27,9 @@ def get_teams():
 # Create a new team
 @app.post("/teams", status_code=201)
 def create_team(team: TeamCreate):
+    for existing_team in teams:
+            if existing_team["name"] == team.name and existing_team["country"] == team.country:
+                raise HTTPException(status_code = 409, detail="A team with this name and country already exists.")
     global next_id
     new_team = {"id": next_id, "name": team.name, "country": team.country}
     teams.append(new_team)
