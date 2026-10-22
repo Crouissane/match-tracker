@@ -1,16 +1,41 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, Depends
+from sqlmodel import SQLModel, Field, Session, create_engine, select
 
-app = FastAPI()
 
-# What a team must look like when someone creates one
-class TeamCreate(BaseModel):
+# ---------- Models ----------
+
+class TeamBase(SQLModel):
     name: str = Field(min_length=1, max_length=50)
-    country: str = Field(min_length=1, max_length=50)   
+    country: str = Field(min_length=1, max_length=50)
 
-# Our "database" for now
-teams = []
-next_id = 1
+
+class Team(TeamBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+
+
+class TeamCreate(TeamBase):
+    pass
+
+
+
+# ---------- Database setup ----------
+
+engine = create_engine("sqlite:///database.db")
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    SQLModel.metadata.create_all(engine)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/")
@@ -18,46 +43,51 @@ def home():
     return {"message": "Match Tracker API is running!"}
 
 
-# Get all teams
 @app.get("/teams")
-def get_teams():
+def get_teams(session: Session = Depends(get_session)):
+    teams = session.exec(select(Team)).all()
     return teams
 
-
-# Create a new team
-@app.post("/teams", status_code=201)
-def create_team(team: TeamCreate):
-    for existing_team in teams:
-            if existing_team["name"] == team.name and existing_team["country"] == team.country:
-                raise HTTPException(status_code = 409, detail="A team with this name and country already exists.")
-    global next_id
-    new_team = {"id": next_id, "name": team.name, "country": team.country}
-    teams.append(new_team)
-    next_id += 1
-    return new_team
-
-
-# Get one team by its id
 @app.get("/teams/{team_id}")
-def get_team(team_id: int):
-    for team in teams:
-        if team["id"] == team_id:
-            return team
-    raise HTTPException(status_code=404, detail="Team not found")
+def get_team(team_id: int, session: Session = Depends(get_session)):
+    team = session.get(Team, team_id)
+    if team:
+        return team
+    else:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+@app.post("/teams", status_code=201)
+def create_team(team: TeamCreate, session: Session = Depends(get_session)):
+    existing = session.exec(
+        select(Team).where(Team.name == team.name, Team.country == team.country)
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="A team with this name and country already exists.")
+
+    db_team = Team.model_validate(team)
+    session.add(db_team)
+    session.commit()
+    session.refresh(db_team)
+    return db_team
 
 @app.put("/teams/{team_id}")
-def update_team(team_id: int, team: TeamCreate):
-    for existing_team in teams:
-        if existing_team["id"] == team_id:
-            existing_team["name"] = team.name
-            existing_team["country"] = team.country
-            return existing_team
-    raise HTTPException(status_code=404, detail="Team not found")
+def update_team(team_id: int, team: TeamCreate, session: Session = Depends(get_session)):
+    existing_team = session.get(Team, team_id)
+    if existing_team:
+        existing_team.name = team.name
+        existing_team.country = team.country
+        session.commit()
+        session.refresh(existing_team)
+        return existing_team
+    else:
+        raise HTTPException(status_code=404, detail="Team not found")
 
 @app.delete("/teams/{team_id}", status_code=204)
-def delete_team(team_id: int):
-    for existing_team in teams:
-        if existing_team["id"] == team_id:
-            teams.remove(existing_team)
-            return
-    raise HTTPException(status_code=404, detail="Team not found")
+def delete_team(team_id: int, session: Session = Depends(get_session)):
+    existing_team = session.get(Team, team_id)
+    if existing_team:
+        session.delete(existing_team)
+        session.commit()
+        return
+    else:
+        raise HTTPException(status_code=404, detail="Team not found")
