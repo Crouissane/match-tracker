@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends
-from sqlmodel import SQLModel, Field, Session, create_engine, select
+from sqlmodel import SQLModel, Field, Session, create_engine, select, or_
 
 
 # ---------- Models ----------
@@ -99,12 +99,23 @@ def update_team(team_id: int, team: TeamCreate, session: Session = Depends(get_s
 @app.delete("/teams/{team_id}", status_code=204)
 def delete_team(team_id: int, session: Session = Depends(get_session)):
     existing_team = session.get(Team, team_id)
-    if existing_team:
-        session.delete(existing_team)
-        session.commit()
-        return
-    else:
+    if not existing_team:
         raise HTTPException(status_code=404, detail="Team not found")
+
+    #Does this team appear in any match?
+    has_match = session.exec(
+        select(Match).where(
+            or_(
+                Match.home_team_id == team_id,
+                Match.away_team_id == team_id,
+            )
+        )
+    ).first()
+    if has_match:
+        raise HTTPException(status_code=409, detail="Cannot delete team that has played matches.")
+
+    session.delete(existing_team)
+    session.commit()
 
 @app.get("/matches")
 def get_matches(session: Session = Depends(get_session)):
