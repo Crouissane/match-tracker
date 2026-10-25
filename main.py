@@ -132,3 +132,61 @@ def get_match(match_id: int, session: Session = Depends(get_session)):
     if not db_match:
         raise HTTPException(status_code=404, detail="Match not found")
     return db_match
+
+
+# ---------- Standings ----------
+
+@app.get("/standings")
+def get_standings(session: Session = Depends(get_session)):
+    teams = session.exec(select(Team)).all()
+    matches = session.exec(select(Match)).all()
+
+    # Step 2: one entry per team, all stats start at 0
+    table = {}
+    for team in teams:
+        table[team.id] = {
+            "team": team.name,
+            "played": 0,
+            "wins": 0,
+            "draws": 0,
+            "losses": 0,
+            "goals_for": 0,
+            "goals_against": 0,
+            "goal_difference": 0,
+            "points": 0
+        }
+
+    # Step 3: update stats from every match
+    for match in matches:
+        home = table[match.home_team_id]
+        away = table[match.away_team_id]
+
+        home["played"] += 1
+        home["goals_for"] += match.home_score
+        home["goals_against"] += match.away_score
+        away["played"] += 1
+        away["goals_for"] += match.away_score
+        away["goals_against"] += match.home_score
+
+        if match.home_score > match.away_score:
+            home["wins"] += 1
+            home["points"] += 3
+            away["losses"] += 1
+        elif match.home_score < match.away_score:
+            away["wins"] += 1
+            away["points"] += 3
+            home["losses"] += 1
+        else:
+            home["draws"] += 1
+            away["draws"] += 1
+            home["points"] += 1
+            away["points"] += 1
+      
+
+    # Step 4: calculate goal difference, then sort
+    standings = list(table.values())
+    for team in standings:
+        team["goal_difference"] = team["goals_for"] - team["goals_against"]
+    standings.sort(key=lambda x: (x["points"], x["goal_difference"], x["goals_for"]), reverse=True)
+    return standings
+
