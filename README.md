@@ -10,9 +10,10 @@ I built this project to learn backend development step by step: REST APIs, datab
 - Record matches between two teams with the final score
 - Automatic league standings (win = 3 points, draw = 1 point)
 - Standings sorted by points, then goal difference, then goals scored
-- Input validation (no empty names, no negative scores, no duplicate teams)
+- Input validation (no empty or blank names, no negative scores, no duplicate teams)
 - A team can't play against itself
 - Teams that have played matches can't be deleted
+- Standings are cached in memory and recalculated only after data changes
 - Automated tests with pytest
 
 ## Tech Stack
@@ -58,7 +59,8 @@ I built this project to learn backend development step by step: REST APIs, datab
 | GET | `/teams` | Get all teams |
 | GET | `/teams/{team_id}` | Get one team |
 | POST | `/teams` | Create a team |
-| PUT | `/teams/{team_id}` | Update a team |
+| PUT | `/teams/{team_id}` | Replace a team (all fields) |
+| PATCH | `/teams/{team_id}` | Update only the fields you send |
 | DELETE | `/teams/{team_id}` | Delete a team (only if it has no matches) |
 
 ### Matches
@@ -111,6 +113,8 @@ Each test uses its own in-memory database, so tests never touch your real data.
 
 - Building a REST API with FastAPI and choosing the right HTTP status codes (200, 201, 204, 400, 404, 409, 422)
 - Validating input with Pydantic
+- Separate models for input, output, and the database table (`TeamCreate`, `TeamPublic`, `Team`)
+- Partial updates with PATCH and `exclude_unset=True`
 - Storing data in a database instead of memory
 - Linking tables with foreign keys
 - Using dependency injection to swap in a test database
@@ -118,7 +122,6 @@ Each test uses its own in-memory database, so tests never touch your real data.
 
 ## Future Improvements
 
-- Cache the standings so they are not recalculated on every request
 - Switch from SQLite to PostgreSQL
 - Run the app with Docker
 - Show team names in match responses instead of only idss
