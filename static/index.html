@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Match Tracker</title>
+  <meta name="description" content="Track teams, record results and follow the league table.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23c6f432'/><path d='M16 7l7 5-2.7 8h-8.6L9 12z' fill='%230b0f0d'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#table" aria-label="Match Tracker home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="14"/><path d="M16 7l7 5-2.7 8h-8.6L9 12z"/></svg>
+        </span>
+        <span class="brand-text">Match<strong>Tracker</strong></span>
+      </a>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <a href="#table" class="tab" data-view="table" role="tab">Table</a>
+        <a href="#matches" class="tab" data-view="matches" role="tab">Matches</a>
+        <a href="#teams" class="tab" data-view="teams" role="tab">Teams</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ========== TABLE ========== -->
+    <section id="view-table" class="view" data-view="table" hidden>
+      <div class="hero">
+        <div>
+          <p class="eyebrow">League</p>
+          <h1>Standings</h1>
+          <p class="sub">Win = 3 pts · Draw = 1 pt · Ranked by points, goal difference, then goals scored.</p>
+        </div>
+        <div id="leader" class="leader-card" hidden></div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="standings" id="standings">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Team</th>
+                <th title="Played">P</th>
+                <th title="Wins">W</th>
+                <th title="Draws">D</th>
+                <th title="Losses">L</th>
+                <th class="hide-sm" title="Goals for">GF</th>
+                <th class="hide-sm" title="Goals against">GA</th>
+                <th title="Goal difference">GD</th>
+                <th class="col-pts" title="Points">Pts</th>
+                <th class="col-form hide-md">Form</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="empty" id="standings-empty" hidden>
+          <div class="empty-icon" aria-hidden="true">🏆</div>
+          <h3>No teams yet</h3>
+          <p>Add a few teams to start building your league table.</p>
+          <a href="#teams" class="btn btn-primary">Add teams</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== MATCHES ========== -->
+    <section id="view-matches" class="view" data-view="matches" hidden>
+      <div class="hero">
+        <div>
+          <p class="eyebrow">Fixtures</p>
+          <h1>Matches</h1>
+          <p class="sub">Record full-time results. The table updates instantly.</p>
+        </div>
+      </div>
+
+      <form id="match-form" class="card scoreboard" autocomplete="off" novalidate>
+        <div class="sb-side">
+          <label for="home-team" class="sb-label">Home</label>
+          <select id="home-team" class="input" required></select>
+        </div>
+        <div class="sb-score">
+          <div class="stepper" data-target="home-score">
+            <button type="button" class="step" data-delta="1" aria-label="Increase home score">+</button>
+            <input id="home-score" type="number" min="0" value="0" inputmode="numeric" aria-label="Home score">
+            <button type="button" class="step" data-delta="-1" aria-label="Decrease home score">−</button>
+          </div>
+          <span class="sb-sep">:</span>
+          <div class="stepper" data-target="away-score">
+            <button type="button" class="step" data-delta="1" aria-label="Increase away score">+</button>
+            <input id="away-score" type="number" min="0" value="0" inputmode="numeric" aria-label="Away score">
+            <button type="button" class="step" data-delta="-1" aria-label="Decrease away score">−</button>
+          </div>
+        </div>
+        <div class="sb-side sb-away">
+          <label for="away-team" class="sb-label">Away</label>
+          <select id="away-team" class="input" required></select>
+        </div>
+        <div class="sb-actions">
+          <button type="submit" class="btn btn-primary btn-lg">Record result</button>
+        </div>
+      </form>
+
+      <div class="list-head">
+        <h2>Results <span class="count" id="match-count"></span></h2>
+        <select id="match-filter" class="input input-sm" aria-label="Filter by team"></select>
+      </div>
+      <div id="match-list" class="match-list"></div>
+      <div class="empty card" id="matches-empty" hidden>
+        <div class="empty-icon" aria-hidden="true">⚽</div>
+        <h3>No matches recorded</h3>
+        <p id="matches-empty-text">Pick two teams above and enter the final score.</p>
+      </div>
+    </section>
+
+    <!-- ========== TEAMS ========== -->
+    <section id="view-teams" class="view" data-view="teams" hidden>
+      <div class="hero">
+        <div>
+          <p class="eyebrow">Clubs</p>
+          <h1>Teams</h1>
+          <p class="sub">Teams that have played matches can’t be deleted.</p>
+        </div>
+      </div>
+
+      <form id="team-form" class="card inline-form" autocomplete="off">
+        <div class="field">
+          <label for="team-name">Team name</label>
+          <input id="team-name" class="input" maxlength="50" placeholder="e.g. Arsenal" required>
+        </div>
+        <div class="field">
+          <label for="team-country">Country</label>
+          <input id="team-country" class="input" maxlength="50" placeholder="e.g. England" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add team</button>
+      </form>
+
+      <div class="list-head">
+        <h2>All teams <span class="count" id="team-count"></span></h2>
+        <input id="team-search" class="input input-sm" type="search" placeholder="Search teams…" aria-label="Search teams">
+      </div>
+      <div id="team-grid" class="team-grid"></div>
+      <div class="empty card" id="teams-empty" hidden>
+        <div class="empty-icon" aria-hidden="true">🛡️</div>
+        <h3 id="teams-empty-title">No teams yet</h3>
+        <p id="teams-empty-text">Use the form above to add your first team.</p>
+      </div>
+    </section>
+
+    <div class="offline card" id="offline" hidden>
+      <h3>Can’t reach the API</h3>
+      <p>Make sure the server is running with <code>uvicorn main:app --reload</code>, then try again.</p>
+      <button class="btn" id="retry">Retry</button>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>Match Tracker</span>
+    <a href="/docs" target="_blank" rel="noopener">API docs ↗</a>
+  </footer>
+
+  <!-- Edit team dialog -->
+  <dialog id="edit-dialog" class="dialog">
+    <form method="dialog" id="edit-form">
+      <h3>Edit team</h3>
+      <div class="field">
+        <label for="edit-name">Team name</label>
+        <input id="edit-name" class="input" maxlength="50" required>
+      </div>
+      <div class="field">
+        <label for="edit-country">Country</label>
+        <input id="edit-country" class="input" maxlength="50" required>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Confirm dialog -->
+  <dialog id="confirm-dialog" class="dialog">
+    <form method="dialog">
+      <h3 id="confirm-title">Are you sure?</h3>
+      <p id="confirm-text" class="muted"></p>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn btn-ghost">Cancel</button>
+        <button value="ok" class="btn btn-danger">Delete</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

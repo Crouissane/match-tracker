@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel, Field, Session, create_engine, select, or_
 
 
@@ -50,6 +52,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Web frontend, served at /app
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/app", StaticFiles(directory=STATIC_DIR, html=True), name="frontend")
 
 
 @app.get("/")
@@ -156,6 +162,7 @@ def get_standings(session: Session = Depends(get_session)):
     table = {}
     for team in teams:
         table[team.id] = {
+            "team_id": team.id,
             "team": team.name,
             "played": 0,
             "wins": 0,

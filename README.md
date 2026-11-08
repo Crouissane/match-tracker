@@ -14,6 +14,7 @@ I built this project to learn backend development step by step: REST APIs, datab
 - A team can't play against itself
 - Teams that have played matches can't be deleted
 - Automated tests with pytest
+- A web frontend (league table, match recording, team management) served at `/app`
 
 ## Tech Stack
 
@@ -22,6 +23,7 @@ I built this project to learn backend development step by step: REST APIs, datab
 - **SQLModel** – database models (built on SQLAlchemy and Pydantic)
 - **SQLite** – database
 - **pytest** – testing
+- **HTML, CSS, JavaScript** – frontend (no build step, in `static/`)
 
 ## Getting Started
 
@@ -47,7 +49,9 @@ I built this project to learn backend development step by step: REST APIs, datab
    uvicorn main:app --reload
    ```
 
-5. Open the interactive docs at http://127.0.0.1:8000/docs
+5. Open the web app at http://127.0.0.1:8000/app
+
+6. Or explore the interactive API docs at http://127.0.0.1:8000/docs
 
 ## API Endpoints
 
