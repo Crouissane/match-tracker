@@ -5,8 +5,19 @@ const state = { teams: [], matches: [], standings: [], teamFilter: "", teamSearc
 const $ = (sel) => document.querySelector(sel);
 
 /* ============ API ============ */
+// Where the FastAPI backend lives.
+// - Served by FastAPI at /app  -> same origin, use relative URLs.
+// - Opened any other way       -> default to the local uvicorn server.
+// Override with ?api=http://host:port in the URL.
+const API_BASE = (() => {
+  const override = new URLSearchParams(location.search).get("api");
+  if (override) return override.replace(/\/$/, "");
+  if (location.protocol.startsWith("http") && location.pathname.startsWith("/app")) return "";
+  return "http://127.0.0.1:8000";
+})();
+
 async function api(path, options = {}) {
-  const res = await fetch(path, {
+  const res = await fetch(API_BASE + path, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
@@ -43,6 +54,7 @@ async function loadAll() {
     console.error(err);
     document.querySelectorAll(".view").forEach((v) => (v.hidden = true));
     $("#offline").hidden = false;
+    $("#api-base-hint").textContent = `Looking for the API at ${API_BASE || location.origin}`;
   }
 }
 
@@ -414,6 +426,7 @@ function confirmDialog(title, text) {
 }
 
 $("#retry").addEventListener("click", loadAll);
+document.querySelector('.footer a[href="/docs"]').href = API_BASE + "/docs";
 window.addEventListener("hashchange", showView);
 
 loadAll();

@@ -157,7 +157,8 @@
 
     <div class="offline card" id="offline" hidden>
       <h3>Can’t reach the API</h3>
-      <p>Make sure the server is running with <code>uvicorn main:app --reload</code>, then try again.</p>
+      <p>Make sure the backend is running with <code>uvicorn main:app --reload</code>, then try again.</p>
+      <p class="muted" id="api-base-hint"></p>
       <button class="btn" id="retry">Retry</button>
     </div>
   </main>

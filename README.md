@@ -53,6 +53,8 @@ I built this project to learn backend development step by step: REST APIs, datab
 
 6. Or explore the interactive API docs at http://127.0.0.1:8000/docs
 
+The frontend also works when opened from a separate dev server (e.g. VS Code Live Server). It then talks to the API at `http://127.0.0.1:8000`. To point it somewhere else, add `?api=http://host:port` to the URL.
+
 ## API Endpoints
 
 ### Teams
